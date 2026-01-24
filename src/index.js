@@ -3,6 +3,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import https from 'https';
 import http from 'http';
+import mongoose from 'mongoose';
 import { handler } from './handler.js';
 
 const privateKey = process.env.SSL_PRIVATE_KEY;
@@ -38,6 +39,12 @@ app.use('/tg-signature-validator-bot-webhook', (req, res) => {
 
 const server = credentials ? https.createServer(credentials, app) : http.createServer(app);
 
-server.listen(port, () => {
-  console.log(`Server started on port ${port} [HTTP${credentials ? 'S' : ''}]`);
-});
+const start = async () => {
+  await mongoose.connect(process.env.MONGO_URL);
+
+  server.listen(port, () => {
+    console.log(`Server started on port ${port} [HTTP${credentials ? 'S' : ''}]`);
+  });
+}
+
+start();

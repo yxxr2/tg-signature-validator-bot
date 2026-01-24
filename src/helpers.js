@@ -1,5 +1,3 @@
-import path from 'path'
-import { readFile, readdir, mkdir, writeFile } from 'node:fs/promises'
 import * as openpgp from 'openpgp'
 
 export const getCommand = (message) => {
@@ -10,19 +8,6 @@ export const getCommand = (message) => {
     }
 
     return null;
-}
-
-const saveFile = async (filePath, file) => {
-    await mkdir(path.dirname(filePath), { recursive: true });
-    await writeFile(filePath, file);
-}
-
-export const savePubkey = async (userId, file) => {
-    return saveFile(path.join('.pubkeys', `${userId}_pubkey.asc`), file);
-}
-export const loadPubkeys = async () => {
-    const files = await readdir('.pubkeys');
-    return Promise.all(files.map(file => readFile(path.join('.pubkeys', file), { encoding: 'utf8' })));
 }
 
 export const checkSig = async (message, signature, publicKeys) => {
