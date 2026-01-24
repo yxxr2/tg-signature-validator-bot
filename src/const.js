@@ -1,0 +1,4 @@
+export const STATE_NOSTATE = 'NOSTATE'
+export const STATE_WAIT_PUBKEY = 'WAIT_PUBKEY'
+export const STATE_WAIT_CONTENT = 'WAIT_CONTENT'
+export const STATE_WAIT_SIG = 'WAIT_SIG'
