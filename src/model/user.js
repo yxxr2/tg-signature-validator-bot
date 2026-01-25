@@ -35,3 +35,6 @@ export const setUserState = async (userId, newValue, data = null) => {
     const state = { value: newValue, data };
     await userModel.updateOne({ userId }, { state }, { upsert: true }).exec();
 };
+export const updateUserStateCustom = async (userId, rules) => {
+    await userModel.updateOne({ userId }, rules).exec();
+};

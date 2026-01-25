@@ -1,10 +1,40 @@
-import { getUserState, setUserState, setUserCert, getAllCerts } from './model/user.js'
-import { STATE_WAIT_PUBKEY, STATE_NOSTATE, STATE_WAIT_CONTENT, STATE_WAIT_SIG } from './model/const.js'
+import { getUserState, setUserState, setUserCert, getAllCerts, updateUserStateCustom } from './model/user.js'
+import { STATE_WAIT_PUBKEY, STATE_NOSTATE, STATE_WAIT_VERIFY_DATA } from './model/const.js'
 import { checkSig, isCertFile, isSigFile } from './helpers.js'
 import { getFile } from './api/file.js'
 import { sendMessage, sendDocument } from './api/message.js'
 
-export const handleCmd = async (command, message, botToken) => {
+export const handleMessage = async (command, message, botToken) => {
+    if (command) {
+        handleCmd(command, message, botToken);
+    } else {
+        handleState(message, botToken);
+    }
+}
+
+const verifySignatures = async (botToken, userState) => {
+    const userStateData = userState.data;
+
+    if (userStateData?.content && userStateData?.sigFiles?.length) {
+        const pubkeys = await getAllCerts();
+        const checkResult = await Promise.all(userStateData.sigFiles.map(async (file) => {
+            const sigFile = await getFile(botToken, file.file_id);
+
+            return checkSig(userStateData.content, sigFile, pubkeys);
+        }));
+
+        const messages = userStateData.sigFiles.reduce((messages, file, index) => {
+            messages.push(`[${file.file_unique_id}] ${file.file_name}: ${checkResult[index] ? 'OK' : 'NOT OK'}`);
+            return messages;
+        }, []);
+
+        return messages;
+    }
+
+    return null;
+}
+
+const handleCmd = async (command, message, botToken) => {
     const userId = message.from.id;
 
     switch (command) {
@@ -14,8 +44,21 @@ export const handleCmd = async (command, message, botToken) => {
             sendMessage(botToken, userId, undefined, 'Pubkey ->');
             break;
          case '/verify':
-            await setUserState(userId, STATE_WAIT_CONTENT);
-            sendMessage(botToken, userId, undefined, 'Content ->');
+            const userState = await getUserState(userId);
+            
+            if (userState.value === STATE_WAIT_VERIFY_DATA) {
+                const messages = await verifySignatures(botToken, userState);
+            
+                if (messages) {
+                    sendMessage(botToken, userId, undefined, messages.join('\n'));
+                    await setUserState(userId, STATE_NOSTATE);
+                } else {
+                    sendMessage(botToken, userId, undefined, 'Content & Sigs ->');
+                }
+            } else {
+                await setUserState(userId, STATE_WAIT_VERIFY_DATA, { content: '', sigFiles: [] });
+                sendMessage(botToken, userId, undefined, 'Content & Sigs ->');
+            }
             break;
         case '/state':
             sendMessage(botToken, userId, undefined, (await getUserState(userId)).value);
@@ -29,7 +72,7 @@ export const handleCmd = async (command, message, botToken) => {
     }
 }
 
-export const handleState = async (message, botToken) => {
+const handleState = async (message, botToken) => {
     const userId = message.from.id;
     const userState = await getUserState(userId);
     const document = message.document;
@@ -47,30 +90,22 @@ export const handleState = async (message, botToken) => {
                 sendMessage(botToken, userId, undefined, 'pubkey expected');
             }
             break;
-         case STATE_WAIT_CONTENT:
-            if (!message.text) {
-                return sendMessage(botToken, userId, undefined, 'text content expected')
+         case STATE_WAIT_VERIFY_DATA:
+            if (!message.text && !isSigFile(document)) {
+                return sendMessage(botToken, userId, undefined, 'text content or sig expected')
             }
 
-            await setUserState(userId, STATE_WAIT_SIG, message.text);
-            sendMessage(botToken, userId, undefined, 'Sig ->');
-            break;
-         case STATE_WAIT_SIG:
+            const rules = {};
+
+            if (message.text) {
+                rules.$set = { 'state.data.content': message.text };
+            }
+
             if (isSigFile(document)) {
-                const sigFile = await getFile(botToken, document.file_id);
-                
-                const pubkeys = await getAllCerts();
-
-                if (await checkSig(userState.data, sigFile, pubkeys)) {
-                    sendMessage(botToken, userId, undefined, "sig correct")
-                } else {
-                    sendMessage(botToken, userId, undefined, "sig incorrect")
-                }
-                
-                await setUserState(userId, STATE_NOSTATE);
-            } else {
-                sendMessage(botToken, userId, undefined, 'sig expected');
+                rules.$push = { 'state.data.sigFiles': document };
             }
+
+            updateUserStateCustom(userId, rules);
             break;
          default:
             sendMessage(botToken, userId, undefined, 'Use cmd');

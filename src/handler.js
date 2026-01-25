@@ -1,18 +1,14 @@
 import { getCommand } from './helpers.js'
-import { handleCmd, handleState } from './directChat.js'
-import { handleMessage } from './publicChat.js';
+import { handleMessage as directChatHandleMessage } from './directChat.js'
+import { handleMessage as publicChatHandleMessage } from './publicChat.js';
 
 export const handler = (message, botToken) => {
     const command = getCommand(message);
     const isDirect = message.from.id === message.chat.id;
 
     if (isDirect) {
-        if (command) {
-            handleCmd(command, message, botToken);
-        } else {
-            handleState(message, botToken);
-        }
+        directChatHandleMessage(command, message, botToken);
     } else {
-        handleMessage(command, message, botToken);
+        publicChatHandleMessage(command, message, botToken);
     }
 }

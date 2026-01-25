@@ -31,7 +31,11 @@ app.use('/tg-signature-validator-bot-webhook', (req, res) => {
   console.log(req.method, JSON.stringify(payload))
 
   if (req.method === 'POST' && payload?.message && whitelistIds.includes(payload.message.from.id.toString())) {
-    handler(payload.message, botToken);
+    try {
+      handler(payload.message, botToken);
+    } catch(e) {
+      console.error(e);
+    }
   }
 
   res.end();
