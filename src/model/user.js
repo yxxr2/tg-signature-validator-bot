@@ -8,7 +8,7 @@ const userSchema = new mongoose.Schema({
     index: true,
     required: true,
   },
-  cert: String,
+  certs: [{ data: String }],
   state: {
     type: {
         value: String,
@@ -20,14 +20,14 @@ const userSchema = new mongoose.Schema({
 
 const userModel = mongoose.model('User', userSchema);
 
-export const setUserCert = async (userId, cert) => {
-    await userModel.updateOne({ userId }, { cert }, { upsert: true }).exec();
+export const setUserCert = async (userId, certData) => {
+    await userModel.updateOne({ userId }, { certs: [{ data: certData }] }, { upsert: true }).exec();
 }
 export const getUserCert = async (userId) => {
-    return (await userModel.findOne({ userId }).exec())?.cert;
+    return (await userModel.findOne({ userId }).exec())?.certs?.[0].data;
 }
 export const getAllCerts = async () => {
-    return (await userModel.find({}, 'cert').exec()).map(({ cert }) => cert);
+    return (await userModel.find({}, 'certs').exec()).map(({ certs }) => certs?.[0].data).filter(Boolean);
 }
 
 export const getUserState = async (userId) => (await userModel.findOne({ userId }).exec())?.state || { value: STATE_NOSTATE };
