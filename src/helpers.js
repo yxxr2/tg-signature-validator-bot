@@ -12,7 +12,8 @@ export const getCommand = (message) => {
     const cmdEntity = entities?.length ? entities.find(ent => ent.type === 'bot_command') : null;
 
     if (cmdEntity) {
-        return text.slice(cmdEntity.offset, cmdEntity.offset + cmdEntity.length)
+        const command = text.slice(cmdEntity.offset, cmdEntity.offset + cmdEntity.length);
+        return command.split('@')[0];
     }
 
     return null;
