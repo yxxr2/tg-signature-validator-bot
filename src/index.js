@@ -18,8 +18,8 @@ if (!botToken) {
   throw new Error('BOT_TOKEN env')
 }
 
-if (!process.env.GROUP_ID || !process.env.CA_TOPIC_ID) {
-  throw new Error('GROUP_ID, CA_TOPIC_ID envs')
+if (!process.env.CA_CHAT_ID || !process.env.PUBLISH_CHAT_ID) {
+  throw new Error('CA_CHAT_ID (CA_TOPIC_ID), PUBLISH_CHAT_ID (PUBLISH_TOPIC_ID) envs')
 }
 
 
