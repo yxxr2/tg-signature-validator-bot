@@ -3,7 +3,7 @@ export const sendMessage = async (botToken, chatId, threadId, message, entities)
     url.searchParams.set('chat_id', chatId);
     threadId && url.searchParams.set('message_thread_id', threadId);
     url.searchParams.set('text', message);
-    entities && url.searchParams.set('entities', entities);
+    entities && url.searchParams.set('entities', JSON.stringify(entities));
 
     return fetch(url.toString()).then(res => res.json());
 }

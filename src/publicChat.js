@@ -23,13 +23,14 @@ export const handleMessage = async (command, message, botToken) => {
     }
 
     const contentMessage = message.reply_to_message;
-    const contentMessageData = { chatId: contentMessage.chat.id, messageId: contentMessage.message_id };
 
     const userId = message.from.id;
     const chatId = message.chat.id;
     const threadId = message.message_thread_id;
 
     if (!contentMessage?.text) return;
+
+    const contentMessageData = { chatId: contentMessage.chat.id, messageId: contentMessage.message_id };
 
     const getSignaturesData = async () => {
         let needSigCount = (await getChatMemberCount(botToken, chatId)).result - 1;
