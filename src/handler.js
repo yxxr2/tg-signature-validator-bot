@@ -4,8 +4,8 @@ import { handleMessage as publicChatHandleMessage } from './publicChat.js';
 
 const queue = getAsyncQueueByKey();
 
-export const handler = (message, botToken) => {
-    const command = getCommand(message);
+export const handler = (message, botToken, botInfo) => {
+    const command = getCommand(message, botInfo);
     const isDirect = message.from.id === message.chat.id;
     const messageKey = message.chat.id + (message.message_thread_id ? `_${message.message_thread_id}` : '');
 

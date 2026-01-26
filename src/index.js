@@ -5,6 +5,8 @@ import https from 'https';
 import http from 'http';
 import mongoose from 'mongoose';
 import { handler } from './handler.js';
+import { getMe } from './api/info.js';
+import { CommandError } from './helpers.js';
 
 const privateKey = process.env.SSL_PRIVATE_KEY;
 const certificate = process.env.SSL_CERTIFICATE;
@@ -22,6 +24,7 @@ if (!process.env.CA_CHAT_ID || !process.env.PUBLISH_CHAT_ID) {
   throw new Error('CA_CHAT_ID (CA_TOPIC_ID), PUBLISH_CHAT_ID (PUBLISH_TOPIC_ID) envs')
 }
 
+let botInfo;
 
 const app = express();
 app.use(bodyParser.json({ limit: '50kb' }));
@@ -32,9 +35,11 @@ app.use('/tg-signature-validator-bot-webhook', (req, res) => {
 
   if (req.method === 'POST' && payload?.message && whitelistIds.includes(payload.message.from.id.toString())) {
     try {
-      handler(payload.message, botToken);
+      handler(payload.message, botToken, botInfo);
     } catch(e) {
-      console.error(e);
+      if (!(e instanceof CommandError)) {
+        console.error(e);
+      }
     }
   }
 
@@ -45,6 +50,7 @@ const server = credentials ? https.createServer(credentials, app) : http.createS
 
 const start = async () => {
   await mongoose.connect(process.env.MONGO_URL);
+  botInfo = (await getMe()).result;
 
   server.listen(port, () => {
     console.log(`Server started on port ${port} [HTTP${credentials ? 'S' : ''}]`);

@@ -1,6 +1,7 @@
 import * as openpgp from 'openpgp'
 
-export const getCommand = (message) => {
+export class CommandError extends Error {}
+export const getCommand = (message, botInfo) => {
     let text = message.text;
     let entities = message.entities;
 
@@ -12,8 +13,18 @@ export const getCommand = (message) => {
     const cmdEntity = entities?.length ? entities.find(ent => ent.type === 'bot_command') : null;
 
     if (cmdEntity) {
-        const command = text.slice(cmdEntity.offset, cmdEntity.offset + cmdEntity.length);
-        return command.split('@')[0];
+        const commandEntity = text.slice(cmdEntity.offset, cmdEntity.offset + cmdEntity.length);
+        const [command, username] = commandEntity.split('@');
+
+        if (username) {
+            if (username === botInfo.username) {
+                return command;
+            }
+
+            throw new CommandError();
+        }
+ 
+        return command;
     }
 
     return null;
