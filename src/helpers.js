@@ -35,3 +35,22 @@ export const checkSig = async (message, signature, publicKeys) => {
 
 export const isCertFile = (document) => document && document.mime_type === 'application/pgp-signature' && document.file_name.endsWith('.asc');
 export const isSigFile = (document) => document && document.mime_type === 'application/pgp-signature' && document.file_name.endsWith('.sig');
+
+export const getAsyncQueueByKey = () => {
+    const queue = {};
+
+    return (key, asyncFn) => {
+        if (!queue[key]) {
+            queue[key] = Promise.resolve();
+        }
+
+        const newPromise = queue[key].then(async () => {
+            await asyncFn();
+
+            if (queue[key] === newPromise) {
+                delete queue[key];
+            }
+        });
+        queue[key] = newPromise;
+    }
+}

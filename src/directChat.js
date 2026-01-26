@@ -6,9 +6,9 @@ import { sendMessage, sendDocument } from './api/message.js'
 
 export const handleMessage = async (command, message, botToken) => {
     if (command) {
-        handleCmd(command, message, botToken);
+        await handleCmd(command, message, botToken);
     } else {
-        handleState(message, botToken);
+        await handleState(message, botToken);
     }
 }
 
@@ -105,7 +105,7 @@ const handleState = async (message, botToken) => {
                 rules.$push = { 'state.data.sigFiles': document };
             }
 
-            updateUserStateCustom(userId, rules);
+            await updateUserStateCustom(userId, rules);
             break;
          default:
             sendMessage(botToken, userId, undefined, 'Use cmd');
