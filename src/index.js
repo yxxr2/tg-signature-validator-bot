@@ -14,9 +14,8 @@ const credentials = privateKey && certificate ? { key: privateKey, cert: certifi
 
 const port = process.env.PORT || (credentials ? 8443 : 88);
 const whitelistIds = (process.env.WHITELIST_IDS || '').split(',');
-const botToken = process.env.BOT_TOKEN;
 
-if (!botToken) {
+if (!process.env.BOT_TOKEN) {
   throw new Error('BOT_TOKEN env')
 }
 
@@ -40,7 +39,7 @@ app.use('/tg-signature-validator-bot-webhook', (req, res) => {
 
   if (isQueryValid && req.method === 'POST' && payload?.message && whitelistIds.includes(payload.message.from.id.toString())) {
     try {
-      handler(payload.message, botToken, botInfo);
+      handler(payload.message, botInfo);
     } catch(e) {
       if (!(e instanceof CommandError)) {
         console.error(e);

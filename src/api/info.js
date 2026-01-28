@@ -1,3 +1,3 @@
-export const getMe = async () => {
-    return fetch(`https://api.telegram.org/bot${process.env.BOT_TOKEN}/getMe`).then(res => res.json());
-}
+import { makeApiCall } from './helpers.js'
+
+export const getMe = async () => makeApiCall('getMe');

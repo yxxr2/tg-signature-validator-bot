@@ -1,6 +1,3 @@
-export const getChatMemberCount = async (botToken, chatId) => {
-    const url = new URL(`https://api.telegram.org/bot${botToken}/getChatMemberCount`);
-    url.searchParams.set('chat_id', chatId);
+import { makeApiCall } from './helpers.js'
 
-    return fetch(url.toString()).then(res => res.json());
-}
+export const getChatMemberCount = async (chatId) => makeApiCall('getChatMemberCount', { chat_id: chatId });

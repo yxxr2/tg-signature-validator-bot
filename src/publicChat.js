@@ -16,7 +16,7 @@ const SUCCESS_EMOJI = '👍';
 const FAILURE_EMOJI = '👎';
 const FORBIDDEN_EMOJI = '😡';
 
-export const handleMessage = async (command, message, botToken) => {
+export const handleMessage = async (command, message) => {
     if (message.left_chat_member) {
         await removeUserSignature(message.chat.id, message.left_chat_member.id);
         return;
@@ -33,11 +33,11 @@ export const handleMessage = async (command, message, botToken) => {
     const contentMessageData = { chatId: contentMessage.chat.id, messageId: contentMessage.message_id };
 
     const getSignaturesData = async () => {
-        let needSigCount = (await getChatMemberCount(botToken, chatId)).result - 1;
+        let needSigCount = (await getChatMemberCount(chatId)).result - 1;
         let sigEntities = await getMessageSignatures(contentMessageData);
 
         const verifiedSigEntities = (await Promise.all(sigEntities.map(async (sigEntity) => {
-            const sigFile = await getFile(botToken, sigEntity.sigFileId);
+            const sigFile = await getFile(sigEntity.sigFileId);
             const userCert = await getUserCert(sigEntity.userId);
 
             if (await checkSig(contentMessage.text, sigFile, [userCert])) {
@@ -56,7 +56,7 @@ export const handleMessage = async (command, message, botToken) => {
             const document = message.document;
 
             if (!(await isUserSigned(contentMessageData, userId)) && isSigFile(document)) {
-                const sigFile = await getFile(botToken, document.file_id);
+                const sigFile = await getFile(document.file_id);
                 const userCert = await getUserCert(userId);
                 let reaction;
 
@@ -67,31 +67,31 @@ export const handleMessage = async (command, message, botToken) => {
                     reaction = FAILURE_EMOJI;
                 }
 
-                await setMessageReaction(botToken, chatId, message.message_id, reaction);
+                await setMessageReaction(chatId, message.message_id, reaction);
             } else {
-                await setMessageReaction(botToken, chatId, message.message_id, FORBIDDEN_EMOJI);
+                await setMessageReaction(chatId, message.message_id, FORBIDDEN_EMOJI);
             }
             break;
          case '/revoke':
             await removeMessageSignature(contentMessageData, userId);
-            await setMessageReaction(botToken, chatId, message.message_id, SUCCESS_EMOJI);
+            await setMessageReaction(chatId, message.message_id, SUCCESS_EMOJI);
             break;
          case '/publish':
             const { sigFileIds, needSigCount } = await getSignaturesData();
 
             if (sigFileIds.length === needSigCount) {
-                const res = await sendMessage(botToken, process.env.PUBLISH_CHAT_ID, process.env.PUBLISH_TOPIC_ID, contentMessage.text, contentMessage.entities);
+                const res = await sendMessage(process.env.PUBLISH_CHAT_ID, process.env.PUBLISH_TOPIC_ID, contentMessage.text, contentMessage.entities);
                 const publishedMessage = res.result;
-                await sendMediaGroup(botToken, process.env.PUBLISH_CHAT_ID, process.env.PUBLISH_TOPIC_ID, sigFileIds, publishedMessage.message_id);
-                await setMessageReaction(botToken, chatId, message.message_id, SUCCESS_EMOJI);
+                await sendMediaGroup(process.env.PUBLISH_CHAT_ID, process.env.PUBLISH_TOPIC_ID, sigFileIds, publishedMessage.message_id);
+                await setMessageReaction(chatId, message.message_id, SUCCESS_EMOJI);
             } else {
-                await sendMessage(botToken, chatId, threadId, `${sigFileIds.length}/${needSigCount} sigs`);
+                await sendMessage(chatId, threadId, `${sigFileIds.length}/${needSigCount} sigs`);
             }
             break;
         case '/state':
             const sigData = await getSignaturesData();
 
-            await sendMessage(botToken, chatId, threadId, `${sigData.sigFileIds.length}/${sigData.needSigCount} sigs`);
+            await sendMessage(chatId, threadId, `${sigData.sigFileIds.length}/${sigData.needSigCount} sigs`);
             break;
     }
 }
