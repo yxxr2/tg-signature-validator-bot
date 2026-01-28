@@ -20,6 +20,10 @@ if (!botToken) {
   throw new Error('BOT_TOKEN env')
 }
 
+if (!process.env.SECRET_TOKEN) {
+  throw new Error('SECRET_TOKEN env')
+}
+
 if (!process.env.CA_CHAT_ID || !process.env.PUBLISH_CHAT_ID) {
   throw new Error('CA_CHAT_ID (CA_TOPIC_ID), PUBLISH_CHAT_ID (PUBLISH_TOPIC_ID) envs')
 }
@@ -32,8 +36,9 @@ app.use(bodyParser.json({ limit: '50kb' }));
 app.use('/tg-signature-validator-bot-webhook', (req, res) => {
   const payload = req.body;
   console.log(req.method, JSON.stringify(payload))
+  const isQueryValid = req.headers['x-telegram-bot-api-secret-token'] === process.env.SECRET_TOKEN;
 
-  if (req.method === 'POST' && payload?.message && whitelistIds.includes(payload.message.from.id.toString())) {
+  if (isQueryValid && req.method === 'POST' && payload?.message && whitelistIds.includes(payload.message.from.id.toString())) {
     try {
       handler(payload.message, botToken, botInfo);
     } catch(e) {
