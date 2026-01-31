@@ -14,20 +14,21 @@ export const getCommand = (message, botInfo) => {
 
     if (cmdEntity) {
         const commandEntity = text.slice(cmdEntity.offset, cmdEntity.offset + cmdEntity.length);
+        const args = text.slice(cmdEntity.offset + cmdEntity.length).split(' ').filter(Boolean);
         const [command, username] = commandEntity.split('@');
 
         if (username) {
             if (username === botInfo.username) {
-                return command;
+                return [command, args];
             }
 
             throw new CommandError();
         }
  
-        return command;
+        return [command, args];
     }
 
-    return null;
+    return [null];
 }
 
 export const checkSig = async (message, signature, publicKeys) => {
@@ -65,3 +66,15 @@ export const getAsyncQueueByKey = () => {
         queue[key] = newPromise;
     }
 }
+
+export const getPublishDestinations = () => {
+    return process.env.PUBLISH_DESTINATIONS.split(',').reduce((acc, item) => {
+        const [alias, chatId, threadId] = item.split(':');
+
+        acc[alias] = { chatId, threadId };
+
+        return acc;
+    }, {})
+}
+
+export const getChatUrl = (chatId, threadId) => `https://t.me/c/${chatId.startsWith('-100') ? chatId.slice(4) : ''}${threadId ? `/${threadId}` : ''}`;

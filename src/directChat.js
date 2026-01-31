@@ -1,10 +1,10 @@
 import { getUserState, setUserState, setUserCert, getAllCerts, updateUserStateCustom } from './model/user.js'
 import { STATE_WAIT_PUBKEY, STATE_NOSTATE, STATE_WAIT_VERIFY_DATA } from './model/const.js'
-import { checkSig, isCertFile, isSigFile } from './helpers.js'
+import { checkSig, isCertFile, isSigFile, getPublishDestinations, getChatUrl } from './helpers.js'
 import { getFile } from './api/file.js'
 import { sendMessage, sendDocument } from './api/message.js'
 
-export const handleMessage = async (command, message) => {
+export const handleMessage = async ([command], message) => {
     if (command) {
         await handleCmd(command, message);
     } else {
@@ -59,6 +59,16 @@ const handleCmd = async (command, message) => {
                 await setUserState(userId, STATE_WAIT_VERIFY_DATA, { content: '', sigFiles: [] });
                 sendMessage(userId, undefined, 'Content & Sigs ->');
             }
+            break;
+        case '/alias':
+            const { text, entities } = Object.entries(getPublishDestinations()).reduce((acc, [alias, { chatId, threadId }]) => {
+                const offset = acc.text.length;
+                acc.text += alias + ' ';
+                acc.entities.push({ type: 'text_link', offset, length: alias.length, url: getChatUrl(chatId, threadId) });
+
+                return acc;
+            }, { text: '', entities: [] });
+            sendMessage(userId, undefined, text.trim(), entities);
             break;
         case '/state':
             sendMessage(userId, undefined, (await getUserState(userId)).value);

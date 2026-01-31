@@ -16,7 +16,7 @@ const SUCCESS_EMOJI = '👍';
 const FAILURE_EMOJI = '👎';
 const FORBIDDEN_EMOJI = '😡';
 
-export const handleMessage = async (command, message) => {
+export const handleMessage = async ([command, args], message, publishDestinations) => {
     if (message.left_chat_member) {
         await removeUserSignature(message.chat.id, message.left_chat_member.id);
         return;
@@ -77,15 +77,25 @@ export const handleMessage = async (command, message) => {
             await setMessageReaction(chatId, message.message_id, SUCCESS_EMOJI);
             break;
          case '/publish':
-            const { sigFileIds, needSigCount } = await getSignaturesData();
+            const destinations = args.filter((arg) => publishDestinations[arg]);
 
-            if (sigFileIds.length === needSigCount) {
-                const res = await sendMessage(process.env.PUBLISH_CHAT_ID, process.env.PUBLISH_TOPIC_ID, contentMessage.text, contentMessage.entities);
-                const publishedMessage = res.result;
-                await sendMediaGroup(process.env.PUBLISH_CHAT_ID, process.env.PUBLISH_TOPIC_ID, sigFileIds, publishedMessage.message_id);
-                await setMessageReaction(chatId, message.message_id, SUCCESS_EMOJI);
+            if (destinations.length) {
+                const { sigFileIds, needSigCount } = await getSignaturesData();
+
+                if (sigFileIds.length === needSigCount) {
+                    await Promise.all(destinations.map(async (alias) => {
+                        const { chatId: destinationChatId, threadId: destinationThreadId } = publishDestinations[alias];
+                        const res = await sendMessage(destinationChatId, destinationThreadId, contentMessage.text, contentMessage.entities);
+                        const publishedMessage = res.result;
+                        await sendMediaGroup(destinationChatId, destinationThreadId, sigFileIds, publishedMessage.message_id);
+                    }));
+                    await setMessageReaction(chatId, message.message_id, SUCCESS_EMOJI);
+                } else {
+                    await sendMessage(chatId, threadId, `${sigFileIds.length}/${needSigCount} sigs`);
+                    await setMessageReaction(chatId, message.message_id, FORBIDDEN_EMOJI);
+                }
             } else {
-                await sendMessage(chatId, threadId, `${sigFileIds.length}/${needSigCount} sigs`);
+                await setMessageReaction(chatId, message.message_id, FORBIDDEN_EMOJI);
             }
             break;
         case '/state':

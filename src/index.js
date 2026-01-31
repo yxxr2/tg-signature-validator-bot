@@ -23,8 +23,8 @@ if (!process.env.SECRET_TOKEN) {
   throw new Error('SECRET_TOKEN env')
 }
 
-if (!process.env.CA_CHAT_ID || !process.env.PUBLISH_CHAT_ID) {
-  throw new Error('CA_CHAT_ID (CA_TOPIC_ID), PUBLISH_CHAT_ID (PUBLISH_TOPIC_ID) envs')
+if (!process.env.CA_CHAT_ID || !process.env.PUBLISH_DESTINATIONS) {
+  throw new Error('CA_CHAT_ID (CA_TOPIC_ID), PUBLISH_DESTINATIONS (alias:chatId?:threadId) envs')
 }
 
 let botInfo;
